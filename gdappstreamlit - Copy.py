@@ -1,69 +1,67 @@
 import streamlit as st
 from tensorflow.keras.models import load_model
-import gdown
+from tensorflow.keras.preprocessing import image
 import numpy as np
 from PIL import Image
+import pandas as pd
+import gdown
 import os
-import matplotlib.pyplot as plt
 
 # Function to download the model from Google Drive
 def download_model():
-    # Extracted file ID from the provided Google Drive link
-    file_id = '1AFt0wFX3und4qXBBk_kPxZNpgLHWRe6-'  # Your actual file ID
-    output = 'casting_defect_model.h5'  # Name of the model file to save
+    file_id = '1AFt0wFX3und4qXBBk_kPxZNpgLHWRe6-'  # Your Google Drive file ID
+    output = 'casting_defect_model.h5'  # Model file name
     gdown.download(f'https://drive.google.com/uc?id={file_id}', output, quiet=False)
 
-# Load the model if it's not already downloaded
+# Check if the model file exists, if not, download it
 if not os.path.exists('casting_defect_model.h5'):
     st.write("Downloading the model from Google Drive...")
     download_model()
+
+# Load model
 model = load_model('casting_defect_model.h5')
 
-st.write("Model is ready to use!")
+# Streamlit UI (styling and titles)
+st.set_page_config(page_title="Casting Defect Detection", page_icon="🔍", layout="centered")
+st.title("🔍 Casting Defect Detection App")
+st.write("Welcome to the Casting Defect Detection app. Upload casting images to check for defects.")
 
-# Let the user upload an image for prediction
-uploaded_image = st.file_uploader("Upload a Casting Image", type=["jpg", "jpeg", "png"])
+# Upload multiple images
+uploaded_files = st.file_uploader("Choose images...", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-if uploaded_image is not None:
-    # Open the image using PIL
-    image = Image.open(uploaded_image)
-    
-    # Display the uploaded image in the app
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-    
-    # Preprocess the image for the model (resize, normalize, etc.)
-    image = image.resize((224, 224))  # Adjust the size depending on the model's input size
-    image = np.array(image) / 255.0  # Normalize the image
-    image = np.expand_dims(image, axis=0)  # Add batch dimension for the model
-    
-    # Button to trigger the prediction
-    if st.button("Predict"):
-        # Make prediction using the model
-        prediction = model.predict(image)
-        
-        # Get the confidence score (assuming binary classification)
-        confidence = prediction[0][0]  # Model's output confidence for being defective
-        
-        # Change the logic here to fix the prediction issue:
-        # Assuming the model outputs 0 for non-defective and 1 for defective
-        defect = "Non-Defective" if confidence < 0.5 else "Defective"  # Fixed threshold logic
-        
-        # Display the result and confidence
-        st.write(f"Prediction: {defect}")
-        st.write(f"Confidence: {confidence:.2f}")
+# Initialize empty list for saving results
+results = []
 
-        # Optional: Display a bar chart of the confidence
-        confidence_values = [confidence, 1 - confidence]  # Confidence for defective and non-defective
-        labels = ['Defective', 'Non-Defective']
-        
-        # Plotting the bar chart
-        plt.bar(labels, confidence_values, color=['red', 'green'])
-        plt.ylim(0, 1)
-        plt.ylabel('Confidence')
-        st.pyplot(plt)
+if uploaded_files:
+    # Loop through all uploaded files
+    for uploaded_file in uploaded_files:
+        # Convert the uploaded image to RGB (in case it has an alpha channel)
+        img = Image.open(uploaded_file).convert("RGB")
+        st.image(img, caption=f"Uploaded Image: {uploaded_file.name}", use_column_width=True)
 
-        # Display additional information based on confidence
-        if confidence >= 0.5:
-            st.write("The casting is predicted to be defective.")
+        # Preprocess the image for prediction
+        img = img.resize((224, 224))
+        img_array = image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0) / 255.0
+
+        # Prediction
+        prediction = model.predict(img_array)
+        score = prediction[0][0]
+
+        # Prepare result
+        if score > 0.5:
+            result = "No Defect"
+            st.success(f"✅ No Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
         else:
-            st.write("The casting is predicted to be non-defective.")
+            result = "Defect"
+            st.error(f"❌ Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
+
+        # Append result to list
+        results.append([uploaded_file.name, result, score])
+
+    # Save all results to CSV when button is clicked
+    if st.button("Save Results to CSV"):
+        # Convert list of results to DataFrame
+        df = pd.DataFrame(results, columns=['Image', 'Prediction', 'Score'])
+        df.to_csv('detection_results.csv', mode='a', header=False, index=False)
+        st.write(f"Results saved to detection_results.csv")
