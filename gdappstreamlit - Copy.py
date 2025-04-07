@@ -48,15 +48,15 @@ if uploaded_files:
 
         # Prediction
         prediction = model.predict(img_array)
-        score = prediction[0][0]
+        score = prediction[0][0]  # Confidence score for the defective class
 
-        # Prepare result
-        if score > 0.5:
-            result = "No Defect"
-            st.success(f"✅ No Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
-        else:
-            result = "Defect"
+        # Corrected logic for assigning the label based on the confidence score
+        if score >= 0.5:
+            result = "Defective"  # If score is 0.5 or higher, it's defective
             st.error(f"❌ Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
+        else:
+            result = "No Defect"  # If score is less than 0.5, it's non-defective
+            st.success(f"✅ No Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
 
         # Append result to list
         results.append([uploaded_file.name, result, score])
