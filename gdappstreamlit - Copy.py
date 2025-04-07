@@ -7,6 +7,9 @@ import pandas as pd
 import gdown
 import os
 
+# Set Streamlit page configuration (must be the first Streamlit command)
+st.set_page_config(page_title="Casting Defect Detection", page_icon="🔍", layout="centered")
+
 # Function to download the model from Google Drive
 def download_model():
     file_id = '1AFt0wFX3und4qXBBk_kPxZNpgLHWRe6-'  # Your Google Drive file ID
@@ -22,7 +25,6 @@ if not os.path.exists('casting_defect_model.h5'):
 model = load_model('casting_defect_model.h5')
 
 # Streamlit UI (styling and titles)
-st.set_page_config(page_title="Casting Defect Detection", page_icon="🔍", layout="centered")
 st.title("🔍 Casting Defect Detection App")
 st.write("Welcome to the Casting Defect Detection app. Upload casting images to check for defects.")
 
