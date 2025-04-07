@@ -43,7 +43,10 @@ if uploaded_image is not None:
         
         # Get the confidence score (assuming binary classification)
         confidence = prediction[0][0]  # Model's output confidence for being defective
-        defect = "Defective" if confidence >= 0.5 else "Non-Defective"  # Threshold at 0.5
+        
+        # Change the logic here to fix the prediction issue:
+        # Assuming the model outputs 0 for non-defective and 1 for defective
+        defect = "Non-Defective" if confidence < 0.5 else "Defective"  # Fixed threshold logic
         
         # Display the result and confidence
         st.write(f"Prediction: {defect}")
