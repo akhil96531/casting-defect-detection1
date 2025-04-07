@@ -42,21 +42,22 @@ if uploaded_files:
         st.image(img, caption=f"Uploaded Image: {uploaded_file.name}", use_column_width=True)
 
         # Preprocess the image for prediction
-        img = img.resize((224, 224))
-        img_array = image.img_to_array(img)
-        img_array = np.expand_dims(img_array, axis=0) / 255.0
+        img = img.resize((224, 224))  # Resize the image as per the model's input size
+        img_array = image.img_to_array(img)  # Convert image to array
+        img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+        img_array = img_array / 255.0  # Normalize the image (if needed by your model)
 
         # Prediction
-        prediction = model.predict(img_array)
+        prediction = model.predict(img_array)  # Model outputs probabilities
         score = prediction[0][0]  # Confidence score for the defective class
 
-        # Corrected logic for assigning the label based on the confidence score
-        if score >= 0.5:
-            result = "Defective"  # If score is 0.5 or higher, it's defective
-            st.error(f"❌ Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
-        else:
-            result = "No Defect"  # If score is less than 0.5, it's non-defective
+        # Prepare result based on model output
+        if score > 0.5:  # Model outputs 1 for defective (class 1)
+            result = "No Defect"
             st.success(f"✅ No Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
+        else:  # Model outputs 0 for non-defective (class 0)
+            result = "Defect"
+            st.error(f"❌ Defect Detected for {uploaded_file.name} | Confidence: {score:.4f}")
 
         # Append result to list
         results.append([uploaded_file.name, result, score])
